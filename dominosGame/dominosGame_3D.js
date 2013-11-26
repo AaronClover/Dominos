@@ -127,7 +127,48 @@ function initBuffers() {
 }
 
 
-function drawScene() {
+
+
+function webGLStart() {
+    var canvas = document.getElementById("dominos-canvas");
+    initGL(canvas);
+    initShaders();
+    initBuffers();
+    
+    //background color is black on redraw
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    //front-back layer testing
+    gl.enable(gl.DEPTH_TEST);
+
+    animate();
+}
+
+
+
+/*************************************
+ * Animation loop
+ *
+ *
+ * requestAnim shim layer by Paul Irish Finds the first API that works to
+ * optimize the animation loop, otherwise defaults to setTimeout().
+ */
+window.requestAnimFrame = (function() {
+    return window.requestAnimationFrame || window.webkitRequestAnimationFrame
+            || window.mozRequestAnimationFrame || window.oRequestAnimationFrame
+            || window.msRequestAnimationFrame
+            || function(/* function */callback, /* DOMElement */element) {
+                window.setTimeout(callback, 1000 / 60);
+            };
+})();
+
+function animate() {
+    requestAnimFrame( animate );
+    draw();
+    update();
+
+}
+
+function draw() {
     //tell gl about the size of the canvas
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     //clear the canvas
@@ -166,18 +207,18 @@ function drawScene() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);
 }
 
+var inc = 0;
+function update() {
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+    //new list which are the vertices of the triangle relative to a center
+    var vertices = [
+         0.0 + inc,  1.0,  0.0,
+        -1.0 + inc, -1.0,  0.0,
+         1.0 + inc, -1.0,  0.0
+    ];
+    //pass the list into the current buffer - Float32Array() makes the list gl compliant
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-function webGLStart() {
-    var canvas = document.getElementById("dominos-canvas");
-    initGL(canvas);
-    initShaders();
-    initBuffers();
-    
-    //background color is black on redraw
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    //front-back layer testing
-    gl.enable(gl.DEPTH_TEST);
-
-    drawScene();
+inc += 0.01;
 }
