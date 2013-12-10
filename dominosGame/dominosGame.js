@@ -82,9 +82,10 @@ pline.prototype = Object.create(drawableItem.prototype);
 pline.prototype.parent = drawableItem.prototype;
 pline.prototype.constructor = pline;
 //changes the size of this object and dependent objects, and moves all vertices
-//relative to the center of this object
+//relative to the center of this object and all dependents relative to the center
 pline.prototype.changeSize = function(newSize){
     var relativePointDistances = new Array;
+    var relativeDependents = new Array;
     //record relative coordinates Distances and dependent size and distances
     relativePointDistances.length = this.vertices.length;
     for (var i = 0; i < relativePointDistances.length; i++){
@@ -92,12 +93,21 @@ pline.prototype.changeSize = function(newSize){
         relativePointDistances[i].x = (this.vertices[i].x - this.center.x)/this.size;
         relativePointDistances[i].y = (this.vertices[i].y - this.center.y)/this.size;
     }
+    relativeDependents.length = this.dependentDrawableItems.length;
+    for (var i = 0; i < relativeDependents.length; i++){
+        relativeDependents[i] = new point;
+        relativeDependents[i].x = (this.dependentDrawableItems[i].center.x - this.center.x)/this.size;
+        relativeDependents[i].y = (this.dependentDrawableItems[i].center.y - this.center.y)/this.size;
+    }
     //change the size of this object and dependent objects
     drawableItem.prototype.changeSize.call(this, newSize);
     //move all the points relative to the center
     for (var i = 0; i < relativePointDistances.length; i++){
         this.vertices[i].x = this.center.x + (relativePointDistances[i].x * this.size);
         this.vertices[i].y = this.center.y + (relativePointDistances[i].y * this.size);
+    }
+    for (var i = 0; i < relativeDependents.length; i++){
+        this.dependentDrawableItems[i].moveTo(this.center.x + (relativeDependents[i].x * this.size), this.center.y + (relativeDependents[i].y * this.size));
     }
 }
 //sets any number of arguments into the vertices 
@@ -153,8 +163,9 @@ pline.prototype.draw = function(ctx){
 //=====================================================================================
 //CLASS - polygon
 function polygon(numberOfVertices, isFilledPolygon){
-    pline.call(this);
+    pline.call(this, numberOfVertices);
     this.isFilled = isFilledPolygon;
+    this.fillStyle = "";
 }
 polygon.prototype = Object.create(pline.prototype);
 polygon.prototype.parent = pline.prototype;
@@ -172,6 +183,7 @@ pline.prototype.draw = function(ctx){
     ctx.lineCap = this.lineCap;
     ctx.strokeStyle = this.outlineColor;
     if (this.isFilled === true){
+        ctx.fillStyle = this.fillStyle;
         ctx.fill();
     }else {
         ctx.stroke();
@@ -183,6 +195,7 @@ pline.prototype.draw = function(ctx){
 function circle(isFilledCircle){
     drawableItem.call(this);
     this.isFilled = isFilledCircle
+    this.fillStyle = "";
 }
 circle.prototype = Object.create(drawableItem.prototype);
 circle.prototype.parent = drawableItem.prototype;
@@ -195,6 +208,7 @@ circle.prototype.draw = function(ctx){
     ctx.lineWidth = this.lineWidth;
     ctx.strokeStyle = this.outlineColor;
     if (this.isFilled === true){
+        ctx.fillStyle = this.fillStyle;
         ctx.fill();
     }else {
         ctx.stroke();
@@ -229,40 +243,89 @@ text.prototype.draw = function(ctx){
 function pip(size){
     circle.call(this,true);
     this.changeSize(size);
+    this.fillStyle = "#FFFFFF";
 }
 pip.prototype = Object.create(circle.prototype);
 pip.prototype.parent = circle.prototype;
 pip.prototype.constructor = pip;
 //=====================================================================================
 //CLASS - pipGroup
-function pipGroup(numOfPips,size){
-    pline.call(this,4);
-//    this.changeSize(size);
+function pipGroup(numOfPips, size){
+    polygon.call(this, 4, true);
+    this.fillStyle = "#000000"
+    this.changeSize(size);
+    this.pipSpaceRatio = size/3.3;
+    this.pipSizeRatio = size/10;
     this.setPoints(this.center.x - size/2, this.center.y - size/2,
         this.center.x + size/2, this.center.y - size/2,
         this.center.x + size/2, this.center.y + size/2,
         this.center.x - size/2, this.center.y + size/2);
     for (var i = 0; i < numOfPips; i++){
-        this.dependentDrawableItems[i] = new pip(size/10);
+        this.dependentDrawableItems[i] = new pip(this.pipSizeRatio);
         this.dependentDrawableItems[i].x = this.center.x;
         this.dependentDrawableItems[i].y = this.center.y;
         this.dependentDrawableItems[i].isFilled = true;
     }
     switch(numOfPips){
     case 1:
-        this.dependentDrawableItems[0].x = this.center.x;
-        this.dependentDrawableItems[0].y = this.center.y;
+        this.dependentDrawableItems[0].center.x = this.center.x;
+        this.dependentDrawableItems[0].center.y = this.center.y;
         break;
     case 2:
-        this.dependentDrawableItems[0].x = this.center.x - size*4/5;
-        this.dependentDrawableItems[0].y = this.center.y - size*4/5;
-        this.dependentDrawableItems[1].x = this.center.x + size*4/5;
-        this.dependentDrawableItems[1].y = this.center.y + size*4/5;
+        this.dependentDrawableItems[0].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[0].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.y = this.center.y + this.pipSpaceRatio;
+        break;
+    case 3:
+        this.dependentDrawableItems[0].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[0].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.x = this.center.x;
+        this.dependentDrawableItems[1].center.y = this.center.y;
+        this.dependentDrawableItems[2].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.y = this.center.y + this.pipSpaceRatio;
+        break;
+    case 4:
+        this.dependentDrawableItems[0].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[0].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.y = this.center.y + this.pipSpaceRatio;
+        this.dependentDrawableItems[3].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[3].center.y = this.center.y + this.pipSpaceRatio;
+        break;
+    case 5:
+        this.dependentDrawableItems[0].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[0].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.x = this.center.x;
+        this.dependentDrawableItems[2].center.y = this.center.y;
+        this.dependentDrawableItems[3].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[3].center.y = this.center.y + this.pipSpaceRatio;
+        this.dependentDrawableItems[4].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[4].center.y = this.center.y + this.pipSpaceRatio;
+        break;
+    case 6:
+        this.dependentDrawableItems[0].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[0].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[1].center.y = this.center.y - this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[2].center.y = this.center.y;
+        this.dependentDrawableItems[3].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[3].center.y = this.center.y;
+        this.dependentDrawableItems[4].center.x = this.center.x + this.pipSpaceRatio;
+        this.dependentDrawableItems[4].center.y = this.center.y + this.pipSpaceRatio;
+        this.dependentDrawableItems[5].center.x = this.center.x - this.pipSpaceRatio;
+        this.dependentDrawableItems[5].center.y = this.center.y + this.pipSpaceRatio;
+        break;
     default:        
     }
 }
-pipGroup.prototype = Object.create(pline.prototype);
-pipGroup.prototype.parent = pline.prototype;
+pipGroup.prototype = Object.create(polygon.prototype);
+pipGroup.prototype.parent = polygon.prototype;
 pipGroup.prototype.constructor = pipGroup;
 
 //----------------------------------------------------------------------
@@ -278,36 +341,10 @@ var spot = new circle(true);
 spot.changeSize(10);
 drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = spot;
 
-//var spotGroup = new pipGroup(1,2);
-//drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = spotGroup;
+var spotGroup = new pipGroup(6, 50);
+drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = spotGroup;
 
-//var txtLine01 = new drawableItem(1);
-//txtLine01.type = "text";
-//txtLine01.font = "30px Arial";
-//txtLine01.center.x = 10;
-//txtLine01.center.y = 20;
-//drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = txtLine01;
 
-//var txtLine02 = new drawableItem(1);
-//txtLine02.type = "text";
-//txtLine02.font = "30px Arial";
-//txtLine02.center.x = 10;
-//txtLine02.center.y = 30;
-//drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = txtLine02;
-
-//var txtLine03 = new drawableItem(1);
-//txtLine03.type = "text";
-//txtLine03.font = "30px Arial";
-//txtLine03.center.x = 10;
-//txtLine03.center.y = 40;
-//drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = txtLine03;
-
-//var txtLine04 = new drawableItem(1);
-//txtLine04.type = "text";
-//txtLine04.font = "30px Arial";
-//txtLine04.center.x = 10;
-//txtLine04.center.y = 50;
-//drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = txtLine04;
 //------------------------------------------
 // Draw loop
 //------------------------------------------
@@ -326,17 +363,9 @@ function drawScreen() {
     line1.lineWidth = drawableArea.size/25;
     
     spot.moveTo(line1.vertices[0].x, line1.vertices[0].y);
+    spotGroup.moveTo(context.canvas.width/4, context.canvas.height/4);
+    spotGroup.changeSize(constrainedSize/5);
     
-    
-    
-//    spotGroup.moveTo(context.canvas.width/4,context.canvas.height/4);
-//    spotGroup.changeSize(constrainedSize/4);
-    
-    
-//    txtLine01.text = "y value = " + spotGroup.center.y;
-//    txtLine02.text = "x value = " + spotGroup.center.x; 
-//    txtLine03.text = "spotGroup size = " + spotGroup.getSize();
-//    txtLine04.text = "pip size = " + spotGroup.dependentDrawableItems[0].getSize();
     drawableArea.draw(context);
 }
 
