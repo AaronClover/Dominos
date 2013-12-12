@@ -370,3 +370,15 @@ domino.prototype.flipOver = function(){
     }
 
 }
+//=====================================================================================
+//CLASS - playerStatusBar
+function playerStatusBar(heightRatio, widthRatio){
+    polygon.call(this, 4, true);
+    this.fillStyle = "#D8D8D8";
+    this.heightRatio = heightRatio;
+    this.widthRatio = widthRatio;
+    this.setPoints(0, 0, 0, 0, 0, 0, 0, 0);
+}
+playerStatusBar.prototype = Object.create(polygon.prototype);
+playerStatusBar.prototype.parent = polygon.prototype;
+playerStatusBar.prototype.constructor = playerStatusBar;
