@@ -6,13 +6,16 @@ var canvas = document.getElementById('myCanvas');
 var drawableArea = new pline(4);
 
 var testDomino = new domino(5,6,50);
-drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = testDomino;
+drawableArea.dependentDrawableItems.push(testDomino);
 
 var activeStatusBar = new playerStatusBar(1/10, 1/3);
-drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = activeStatusBar;
+drawableArea.dependentDrawableItems.push(activeStatusBar);
 
 var passiveStatusBar = new playerStatusBar(1/10, 1/3);
-drawableArea.dependentDrawableItems[drawableArea.dependentDrawableItems.length] = passiveStatusBar;
+drawableArea.dependentDrawableItems.push(passiveStatusBar);
+
+var boneYard = new boneyard(1/4, window.innerWidth, window.innerHeight);
+drawableArea.dependentDrawableItems.push(boneYard);
 
 //------------------------------------------
 // Draw loop
@@ -29,7 +32,7 @@ function drawScreen() {
             0, ctx.canvas.height);
     
     testDomino.moveTo(ctx.canvas.width/3, ctx.canvas.height/3);
-    testDomino.changeSize(constrainedSize/5);
+    testDomino.changeSize(constrainedSize/10);
     
     //draw the active player's status bar on the bottom left
     activeStatusBar.setPoints(0, ctx.canvas.height - ctx.canvas.height * activeStatusBar.heightRatio,
@@ -42,6 +45,8 @@ function drawScreen() {
             ctx.canvas.width, 0,
             ctx.canvas.width, ctx.canvas.height * passiveStatusBar.heightRatio,
             ctx.canvas.width - ctx.canvas.width * passiveStatusBar.widthRatio, ctx.canvas.height * passiveStatusBar.heightRatio);
+    
+    boneYard.changeSize(ctx.canvas.width, ctx.canvas.height);
     
     drawableArea.draw(ctx);
 }

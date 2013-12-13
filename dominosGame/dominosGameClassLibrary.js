@@ -74,8 +74,8 @@ function pline(numberOfVertices){
     for (var i = 0; i < numberOfVertices; i++){this.vertices[i] = new point(0,0);}
 }
 pline.prototype = Object.create(drawableItem.prototype);
-pline.prototype.parent = drawableItem.prototype;
 pline.prototype.constructor = pline;
+
 //changes the size of this object and dependent objects, and moves all vertices
 //relative to the center of this object and all dependents relative to the center
 pline.prototype.changeSize = function(newSize){
@@ -165,7 +165,6 @@ function polygon(numberOfVertices, isFilledPolygon){
     this.fillStyle = "";
 }
 polygon.prototype = Object.create(pline.prototype);
-polygon.prototype.parent = pline.prototype;
 polygon.prototype.constructor = polygon;
 
 //draws the vertices and then draws every object in dependentDrawableItems
@@ -195,8 +194,8 @@ function circle(isFilledCircle){
     this.fillStyle = "";
 }
 circle.prototype = Object.create(drawableItem.prototype);
-circle.prototype.parent = drawableItem.prototype;
 circle.prototype.constructor = circle;
+
 circle.prototype.draw = function(ctx){
     ctx.moveTo(this.center.x,this.center.y);
     ctx.beginPath();
@@ -220,8 +219,8 @@ function text(textDisplay,isFilledText){
     this.isFilled = isFilledText;
 }
 text.prototype = Object.create(drawableItem.prototype);
-text.prototype.parent = drawableItem.prototype;
 text.prototype.constructor = circle;
+
 text.prototype.draw = function(ctx){
     ctx.beginPath();
     ctx.moveTo(this.center.x,this.center.y);
@@ -243,8 +242,8 @@ function pip(size){
     this.fillStyle = "#FFFFFF";
 }
 pip.prototype = Object.create(circle.prototype);
-pip.prototype.parent = circle.prototype;
 pip.prototype.constructor = pip;
+
 //=====================================================================================
 //CLASS - pipGroup
 function pipGroup(numOfPips, size){
@@ -264,6 +263,8 @@ function pipGroup(numOfPips, size){
         this.dependentDrawableItems[i].isFilled = true;
     }
     switch(numOfPips){
+    case 0:
+        break;
     case 1:
         this.dependentDrawableItems[0].center.x = this.center.x;
         this.dependentDrawableItems[0].center.y = this.center.y;
@@ -322,8 +323,8 @@ function pipGroup(numOfPips, size){
     }
 }
 pipGroup.prototype = Object.create(polygon.prototype);
-pipGroup.prototype.parent = polygon.prototype;
 pipGroup.prototype.constructor = pipGroup;
+
 //=====================================================================================
 //CLASS - domino
 function domino(side1, side2, size){
@@ -355,7 +356,6 @@ function domino(side1, side2, size){
     
 }
 domino.prototype = Object.create(polygon.prototype);
-domino.prototype.parent = polygon.prototype;
 domino.prototype.constructor = domino;
 
 domino.prototype.flipOver = function(){
@@ -377,8 +377,49 @@ function playerStatusBar(heightRatio, widthRatio){
     this.fillStyle = "#D8D8D8";
     this.heightRatio = heightRatio;
     this.widthRatio = widthRatio;
-    this.setPoints(0, 0, 0, 0, 0, 0, 0, 0);
 }
 playerStatusBar.prototype = Object.create(polygon.prototype);
-playerStatusBar.prototype.parent = polygon.prototype;
 playerStatusBar.prototype.constructor = playerStatusBar;
+
+//=====================================================================================
+//CLASS - boneyard
+function boneyard(sizeRatio, canvasWidth, canvasHeight){
+    polygon.call(this, 4, true);
+    this.fillStyle = "#D8D8D8";
+    this.sizeRatio = sizeRatio;
+    this.center.x = canvasWidth;
+    this.center.y = canvasHeight;
+    this.bones = new Array();
+    var smallestSize = ((canvasWidth < canvasHeight) ? canvasWidth : canvasHeight)
+    var boneCounter = 0;
+    var i = 0;
+    //draw the boneyard
+    this.setPoints(canvasWidth - canvasWidth * sizeRatio, canvasHeight - canvasHeight * sizeRatio,
+            canvasWidth, canvasHeight - canvasHeight * sizeRatio,
+            canvasWidth, canvasHeight,
+            canvasWidth - canvasWidth * sizeRatio, canvasHeight);
+    //populate the boneyard with an entire domino set
+    while (i < 7){
+        for (var j = 0; j <= i; j++){
+            this.bones[i+j] = new domino(i, j, sizeRatio/6);
+            this.bones[i+j].moveTo(this.center.x - this.center.x / 2,
+                    this.center.y - this.center.y * this.sizeRatio / 2);
+            boneCounter++;
+        }
+        i++;
+    }
+}
+boneyard.prototype = Object.create(polygon.prototype);
+boneyard.prototype.constructor = boneyard;
+boneyard.prototype.changeSize = function(canvasWidth, canvasHeight){
+    this.size = ((canvasWidth < canvasHeight)? canvasWidth : canvasHeight) * this.sizeRatio;
+    this.center.x = canvasWidth;
+    this.center.y = canvasHeight;
+    //draw the boneyard
+    this.setPoints(canvasWidth - canvasWidth * this.sizeRatio, canvasHeight - canvasHeight * this.sizeRatio,
+            canvasWidth, canvasHeight - canvasHeight * this.sizeRatio,
+            canvasWidth, canvasHeight,
+            canvasWidth - canvasWidth * this.sizeRatio, canvasHeight);
+    drawableItem.prototype.changeSize.call(this, this.size);
+
+}
