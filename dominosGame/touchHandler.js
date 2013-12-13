@@ -7,6 +7,7 @@ function onTouchStart(event) {
 function onTouchMove(event) {
 	 // Prevent the browser from doing its default thing (scroll, zoom)
 	event.preventDefault(); 
+    testDomino.moveTo(event.changedTouches[0].clientX,event.changedTouches[0].clientY);
 } 
  
 function onTouchEnd(event) { 
