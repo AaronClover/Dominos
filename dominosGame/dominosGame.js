@@ -2,20 +2,21 @@ var canvas = document.getElementById('myCanvas');
 
 //----------------------------------------------------------------------
 // Objects/variables - top layer is last (except drawable area is first)
+// this is basically initializing the game
 //----------------------------------------------------------------------
 var drawableArea = new pline(4);
 
-var testDomino = new domino(5,6,50);
-drawableArea.dependentDrawableItems.push(testDomino);
+drawableArea.dependentDrawableItems.push(new domino(5,6,50));
+drawableArea.dependentDrawableItems.push(new domino(2,3,50));
 
-var activeStatusBar = new playerStatusBar(1/10, 1/3);
+var activeStatusBar = new playerStatusBar("Player 1");
 drawableArea.dependentDrawableItems.push(activeStatusBar);
 
-var passiveStatusBar = new playerStatusBar(1/10, 1/3);
+var passiveStatusBar = new playerStatusBar("Player 2");
 drawableArea.dependentDrawableItems.push(passiveStatusBar);
 
-var boneYard = new boneyard(1/4, window.innerWidth, window.innerHeight);
-drawableArea.dependentDrawableItems.push(boneYard);
+var theBoneyard = new boneyard(1/3, window.innerWidth, window.innerHeight);
+drawableArea.dependentDrawableItems.push(theBoneyard);
 
 //------------------------------------------
 // Draw loop
@@ -31,8 +32,11 @@ function drawScreen() {
             ctx.canvas.width, ctx.canvas.height,
             0, ctx.canvas.height);
     
-    testDomino.moveTo(ctx.canvas.width/3, ctx.canvas.height/3);
-    testDomino.changeSize(constrainedSize/10);
+    drawableArea.dependentDrawableItems[0].moveTo(ctx.canvas.width/3, ctx.canvas.height/3);
+    drawableArea.dependentDrawableItems[0].changeSize(constrainedSize/10);
+    
+    drawableArea.dependentDrawableItems[1].moveTo(ctx.canvas.width/2, ctx.canvas.height/2);
+    drawableArea.dependentDrawableItems[1].changeSize(constrainedSize/10);
     
     //draw the active player's status bar on the bottom left
     activeStatusBar.setPoints(0, ctx.canvas.height - ctx.canvas.height * activeStatusBar.heightRatio,
@@ -46,7 +50,9 @@ function drawScreen() {
             ctx.canvas.width, ctx.canvas.height * passiveStatusBar.heightRatio,
             ctx.canvas.width - ctx.canvas.width * passiveStatusBar.widthRatio, ctx.canvas.height * passiveStatusBar.heightRatio);
     
-    boneYard.changeSize(ctx.canvas.width, ctx.canvas.height);
+    //draw the boneyard
+    theBoneyard.moveTo(ctx.canvas.width, ctx.canvas.height);
+    theBoneyard.changeSize(ctx.canvas.width, ctx.canvas.height);
     
     drawableArea.draw(ctx);
 }

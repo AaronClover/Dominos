@@ -216,10 +216,13 @@ circle.prototype.draw = function(ctx){
 function text(textDisplay,isFilledText){
     drawableItem.call(this);
     this.text = textDisplay;
+    this.strokeStyle = "#000000";
+    this.fillStyle = "#000000"
     this.isFilled = isFilledText;
+    this.font = "30px Arial";
 }
 text.prototype = Object.create(drawableItem.prototype);
-text.prototype.constructor = circle;
+text.prototype.constructor = text;
 
 text.prototype.draw = function(ctx){
     ctx.beginPath();
@@ -227,6 +230,8 @@ text.prototype.draw = function(ctx){
     ctx.closePath();
     ctx.lineWidth = this.lineWidth;
     ctx.strokeStyle = this.strokeStyle;
+    ctx.fillStyle = this.fillStyle;
+    ctx.font = this.font;
     if (this.isFilled === true){
         ctx.fillText(this.text,this.center.x,this.center.y);
     }else {
@@ -372,11 +377,14 @@ domino.prototype.flipOver = function(){
 }
 //=====================================================================================
 //CLASS - playerStatusBar
-function playerStatusBar(heightRatio, widthRatio){
+function playerStatusBar(name){
     polygon.call(this, 4, true);
     this.fillStyle = "#D8D8D8";
-    this.heightRatio = heightRatio;
-    this.widthRatio = widthRatio;
+    this.heightRatio = 1/10;
+    this.widthRatio = 1/3;
+    this.dependentDrawableItems[0] = new text(name, true);
+    this.dependentDrawableItems[0].moveTo(200,200);
+    
 }
 playerStatusBar.prototype = Object.create(polygon.prototype);
 playerStatusBar.prototype.constructor = playerStatusBar;
@@ -389,21 +397,16 @@ function boneyard(sizeRatio, canvasWidth, canvasHeight){
     this.sizeRatio = sizeRatio;
     this.center.x = canvasWidth;
     this.center.y = canvasHeight;
-    this.bones = new Array();
-    var smallestSize = ((canvasWidth < canvasHeight) ? canvasWidth : canvasHeight)
+    this.size = ((canvasWidth < canvasHeight) ? canvasWidth : canvasHeight)
     var boneCounter = 0;
     var i = 0;
-    //draw the boneyard
-    this.setPoints(canvasWidth - canvasWidth * sizeRatio, canvasHeight - canvasHeight * sizeRatio,
-            canvasWidth, canvasHeight - canvasHeight * sizeRatio,
-            canvasWidth, canvasHeight,
-            canvasWidth - canvasWidth * sizeRatio, canvasHeight);
+
     //populate the boneyard with an entire domino set
     while (i < 7){
         for (var j = 0; j <= i; j++){
-            this.bones[i+j] = new domino(i, j, sizeRatio/6);
-            this.bones[i+j].moveTo(this.center.x - this.center.x / 2,
-                    this.center.y - this.center.y * this.sizeRatio / 2);
+            this.dependentDrawableItems[boneCounter] = new domino(i, j, this.size/25);
+            this.dependentDrawableItems[boneCounter].moveTo(this.center.x - (boneCounter%10 + 1) * 35,
+                    this.center.y - Math.floor(boneCounter/10 +1) * canvasWidth/32);
             boneCounter++;
         }
         i++;
@@ -415,11 +418,17 @@ boneyard.prototype.changeSize = function(canvasWidth, canvasHeight){
     this.size = ((canvasWidth < canvasHeight)? canvasWidth : canvasHeight) * this.sizeRatio;
     this.center.x = canvasWidth;
     this.center.y = canvasHeight;
+    this.numberOfColumns = 10;
     //draw the boneyard
     this.setPoints(canvasWidth - canvasWidth * this.sizeRatio, canvasHeight - canvasHeight * this.sizeRatio,
             canvasWidth, canvasHeight - canvasHeight * this.sizeRatio,
             canvasWidth, canvasHeight,
             canvasWidth - canvasWidth * this.sizeRatio, canvasHeight);
-    drawableItem.prototype.changeSize.call(this, this.size);
+    for (var i = 0; i < this.dependentDrawableItems.length; i++){
+        this.dependentDrawableItems[i].changeSize(this.size/10);
+        this.dependentDrawableItems[i].moveTo(this.center.x - (i % this.numberOfColumns + 1) * canvasWidth/32,
+                this.center.y - Math.floor(i / this.numberOfColumns + 1) * canvasHeight/12);
+    }
+    
 
 }
