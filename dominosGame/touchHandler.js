@@ -1,6 +1,7 @@
 var currentlyTouchedItem = -1;
 
 function onTouchStart(event) {
+    touchEvent = event.targetTouches[0];
     for (var i = 0; i < touchableItems.length; i++)
     {
         if (touchableItems[i].enabled) {
@@ -28,7 +29,7 @@ function onTouchMove(event) {
 	 // Prevent the browser from doing its default thing (scroll, zoom)
 	//event.preventDefault(); 
     //testDomino.moveTo(event.changedTouches[0].clientX,event.changedTouches[0].clientY)
-        touchEvent = event.touches[0];
+        touchEvent = event.targetTouches[0];
 } 
 function onMouseMove(event) {
     touchEvent = event;
@@ -48,4 +49,18 @@ function isPointInPoly(poly, ptX, ptY){
         && (ptX < (poly[j].x - poly[i].x) * (ptY - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)
         && (c = !c);
 return c;
+}
+
+function lineDistance(x1,y1,x2,y2)
+{
+  var xs = 0;
+  var ys = 0;
+ 
+  xs = x2- x1;
+  xs = xs * xs;
+ 
+  ys = y1 - y1;
+  ys = ys * ys;
+ 
+  return Math.sqrt( xs + ys );
 }
