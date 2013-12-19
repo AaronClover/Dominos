@@ -1,13 +1,23 @@
 var canvas = document.getElementById('myCanvas');
+var cWidth  = window.innerWidth;
+var cHeight = window.innerHeight;
 
+var touchEvent;
 //----------------------------------------------------------------------
 // Objects/variables - top layer is last (except drawable area is first)
 //----------------------------------------------------------------------
+dominoArray = new Array();   // All dominoes shoould be stored in here
 var drawableArea = new pline(4);
+var touchableItems = new Array(); //All touchable items must go in here
+var activeDomino = -1;  
+var dominoIds = 0;
 
-var testDomino = new domino(5,6,50);
-drawableArea.dependentDrawableItems.push(testDomino);
+var testdom = new domino(5,6,50, dominoIds++);
+//dominoArray.push(testdom);
+testdom.moveTo(cWidth/2, cHeight/2);
 
+var testdom2 = new domino(5,6,50, dominoIds++);
+testdom2.moveTo(cWidth/2, cHeight/2);
 
 var activeStatusBar = new playerStatusBar(1/10, 1/3);
 drawableArea.dependentDrawableItems.push(activeStatusBar);
@@ -15,18 +25,22 @@ drawableArea.dependentDrawableItems.push(activeStatusBar);
 var passiveStatusBar = new playerStatusBar(1/10, 1/3);
 drawableArea.dependentDrawableItems.push(passiveStatusBar);
 
-var boneYard = new boneyard(1/4, window.innerWidth, window.innerHeight);
+var boneYard = new boneyard(1/2, window.innerWidth, window.innerHeight);
 drawableArea.dependentDrawableItems.push(boneYard);
 
 
 var touchable = 'createTouch' in document;
 
+var watchTouch = false;
 
 if(touchable) {
 	canvas.addEventListener( 'touchstart', onTouchStart, false );
 	canvas.addEventListener( 'touchmove', onTouchMove, false );
 	canvas.addEventListener( 'touchend', onTouchEnd, false );
 }
+canvas.addEventListener('mousedown', onClickStart, false);
+canvas.addEventListener('mousemove', onMouseMove, false);
+canvas.addEventListener('mouseup', onClickEnd, false);
 /*************************************
  * Animation loop
  *
@@ -46,10 +60,21 @@ window.requestAnimFrame = (function() {
 
 function animate() {
     requestAnimFrame( animate );
-    //update();
+    update();
     drawScreen();
 
 }
+//------------------------------------------
+// Update
+//------------------------------------------
+var updateArray = new Array();
+function update(){
+    if (activeDomino >= 0) {
+        //console.log(mouseX);
+        //dominoArray[activeDomino].moveTo(mouseX, mouseY);
+        dominoArray[activeDomino].moveTo(touchEvent.clientX, touchEvent.clientY);
+        }
+};
 //------------------------------------------
 // Draw
 //------------------------------------------
@@ -64,8 +89,8 @@ function drawScreen() {
             ctx.canvas.width, ctx.canvas.height,
             0, ctx.canvas.height);
     
-    
-    testDomino.changeSize(constrainedSize/10);
+    dominoArray.forEach(function (domino){domino.changeSize(constrainedSize/10)});
+   // testDomino.changeSize(constrainedSize/10);
     
     //draw the active player's status bar on the bottom left
     activeStatusBar.setPoints(0, ctx.canvas.height - ctx.canvas.height * activeStatusBar.heightRatio,
@@ -84,4 +109,4 @@ function drawScreen() {
     drawableArea.draw(ctx);
 }
 
-window.addEventListener('resize', drawScreen);
+//window.addEventListener('resize', drawScreen());

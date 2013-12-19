@@ -17,6 +17,22 @@ function drawableItem() {
     this.dependentDrawableItems = new Array();
 }
 
+//=====================================================================================
+// CLASS - touchableItem
+function touchable(pVerticies) {
+    this.enabled = true;
+    this.vertices = pVerticies;
+    this.touchAction; // Function
+    
+    this.enable = function(){
+        this.enabled = true;
+        };
+        
+    this.disable = function(){
+        this.enabled = false;
+        };
+    }
+
 // changes the size of this item and the relative size of all dependents
 drawableItem.prototype.changeSize = function(newSize){
     var relativeItemSizes = new Array;
@@ -332,7 +348,9 @@ pipGroup.prototype.constructor = pipGroup;
 
 //=====================================================================================
 //CLASS - domino
-function domino(side1, side2, size){
+function domino(side1, side2, size, pIndex){
+    touchable.apply(this);
+    this.index = pIndex;
     polygon.call(this, 4, true);
     this.fillStyle = "#000000";
     this.middleLineColor = "#FFFFFF";
@@ -359,9 +377,25 @@ function domino(side1, side2, size){
     this.dependentDrawableItems[2].strokeStyle = this.middleLineColor;
     this.dependentDrawableItems[2].size = (size * this.middleLineWeightRatio);
     
+    drawableArea.dependentDrawableItems.push(this);
+    touchableItems.push(this);
+    dominoArray.push(this);
+    this.touchAction = function() {
+    //console.log("flip");
+    //this.flipOver();
+    watchTouch = true;
+    activeDomino= this.index;
+    }
+    
+    this.releaseAction = function() {
+    watchtouch = false;
+    activeDomino = -1;
+    }
+
 }
 domino.prototype = Object.create(polygon.prototype);
 domino.prototype.constructor = domino;
+
 
 domino.prototype.flipOver = function(){
     if (this.isFaceUp === true){
