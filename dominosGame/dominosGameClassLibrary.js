@@ -19,7 +19,7 @@ function drawableItem() {
 
 // changes the size of this item and the relative size of all dependents
 drawableItem.prototype.changeSize = function(newSize){
-    var relativeItemSizes = new Array;
+    var relativeItemSizes = new Array();
     relativeItemSizes.length = this.dependentDrawableItems.length;
     // get the relative size of all dependent items
     for (var i = 0; i < this.dependentDrawableItems.length; i++){
@@ -69,6 +69,14 @@ drawableItem.prototype.draw = function(ctx){
 //CLASS - pline (polyline)
 function pline(numberOfVertices){
     drawableItem.call(this);
+    this.lineWidth;
+    this.top = 0;
+    this.bottom = 0;
+    this.left = 0;
+    this.right = 0;
+    this.width;
+    this.height;
+    this.alpha = 1;
     this.lineCap = "round";
     this.vertices = new Array();
     for (var i = 0; i < numberOfVertices; i++){this.vertices[i] = new point(0,0);}
@@ -109,10 +117,15 @@ pline.prototype.changeSize = function(newSize){
 //sets any number of arguments into the vertices 
 pline.prototype.setPoints = function() {
     for (var i = 0; i < arguments.length; i++){
+
         if (!(i % 2)){
             this.vertices[(i/2)].x = arguments[i];
+            this.right = ((arguments[i] > this.right)? arguments[i] : this.right);
+            this.left = ((arguments[i] < this.left)? arguments[i] : this.left);
         }else{
             this.vertices[((i-1)/2)].y = arguments[i];
+            this.bottom = ((arguments[i] > this.bottom)? arguments[i] : this.bottom);
+            this.top = ((arguments[i] < this.top)? arguments[i] : this.top);
         }
     }
 }
@@ -178,6 +191,7 @@ polygon.prototype.draw = function(ctx){
     ctx.lineWidth = this.lineWidth;
     ctx.lineCap = this.lineCap;
     ctx.strokeStyle = this.strokeStyle;
+    ctx.globalAlpha = this.alpha;
     if (this.isFilled === true){
         ctx.fillStyle = this.fillStyle;
         ctx.fill();
@@ -185,6 +199,7 @@ polygon.prototype.draw = function(ctx){
         ctx.stroke();
     }
     drawableItem.prototype.draw.call(this,ctx);
+    
 }
 //=====================================================================================
 //CLASS - circle
@@ -209,17 +224,20 @@ circle.prototype.draw = function(ctx){
     }else {
         ctx.stroke();
     }
-    drawableItem.prototype.draw.call(this,ctx);
+    drawableItem.prototype.draw.call(this, ctx);
 }
 //=====================================================================================
 //CLASS - text
-function text(textDisplay,isFilledText){
+function text(textDisplay, isFilledText){
     drawableItem.call(this);
     this.text = textDisplay;
-    this.strokeStyle = "#000000";
-    this.fillStyle = "#000000"
+    this.strokeStyle = "rgba(0,0,0,0.75)";
+    this.fillStyle = "rgba(0,0,0,0.75)"
     this.isFilled = isFilledText;
-    this.font = "30px Arial";
+    this.size = 25;
+    this.font = "Arial";
+    this.textAlign = "left";
+    this.textBaseline = "middle";
 }
 text.prototype = Object.create(drawableItem.prototype);
 text.prototype.constructor = text;
@@ -231,13 +249,18 @@ text.prototype.draw = function(ctx){
     ctx.lineWidth = this.lineWidth;
     ctx.strokeStyle = this.strokeStyle;
     ctx.fillStyle = this.fillStyle;
-    ctx.font = this.font;
+    ctx.font = this.size + "px " + this.font;
+    ctx.textAlign = this.textAlign;
+    ctx.textBaseline = this.textBaseline;
     if (this.isFilled === true){
         ctx.fillText(this.text,this.center.x,this.center.y);
     }else {
         ctx.strokeText(this.text,this.center.x,this.center.y);
     }
     drawableItem.prototype.draw.call(this,ctx);
+}
+text.prototype.changeSize = function(newSize){
+    drawableItem.prototype.changeSize.call(this, newSize);
 }
 //=====================================================================================
 //CLASS - pip
@@ -368,67 +391,323 @@ domino.prototype.flipOver = function(){
         this.hiddenFace = this.dependentDrawableItems.slice(0);
         this.dependentDrawableItems.length = 0;
         this.isFaceUp = false;
+        this.fillStyle = "rgba(0,0,0,0.75)";
     }else{
         this.dependentDrawableItems = this.hiddenFace.slice(0);
         this.hiddenFace.length = 0;
         this.isFaceUp = true;
+        this.fillStyle = "rgba(0,0,0,1)";
     }
 
 }
 //=====================================================================================
-//CLASS - playerStatusBar
-function playerStatusBar(name){
-    polygon.call(this, 4, true);
-    this.fillStyle = "#D8D8D8";
-    this.heightRatio = 1/10;
-    this.widthRatio = 1/3;
-    this.dependentDrawableItems[0] = new text(name, true);
-    this.dependentDrawableItems[0].moveTo(200,200);
-    
+//CLASS - playerPanel
+function playerPanel(activeOrPassive){
+  polygon.call(this, 4, false);
+  this.strokeStyle = "#00FF00";
+  this.heightRatio = 1/4;
+  this.widthRatio = 1/2;
+  this.statusBar = new playerStatusBar("Active");
+  this.dependentDrawableItems[1] = this.statusBar;
+  this.activeOrPassive = activeOrPassive;
+  //this.player = new player;
+  //this.dependentDrawableItems[1] = this.player;
 }
+
+playerPanel.prototype = Object.create(polygon.prototype);
+playerPanel.prototype.constructor = playerPanel;
+
+playerPanel.prototype.changeSize = function(container, player){
+    this.player = player;
+    this.dependentDrawableItems[0] = player;
+    var containerWidth = container.canvas.width;
+    var containerHeight = container.canvas.height;
+    this.constrainedSize = ((containerWidth < containerHeight)? containerWidth : containerHeight);
+    // arrange position of the player panel
+    if (this.activeOrPassive === "active"){
+      this.top = containerHeight - containerHeight * this.heightRatio;
+      this.right = containerWidth * this.widthRatio;
+      this.bottom = containerHeight;
+      this.left = 0;
+      this.center.y = this.bottom;
+      this.center.x = this.left;
+    }else if(this.activeOrPassive === "passive"){
+      this.top = 0;
+      this.right = containerWidth;
+      this.bottom = containerHeight * this.heightRatio;
+      this.left = containerWidth - containerWidth * this.widthRatio;
+      this.center.y = this.top;
+      this.center.x = this.right;
+    }
+  // arrange the panel (temporary outline) - uncomment to see the panel outline
+//  this.setPoints(this.left, this.top,
+//          this.right, this.top,
+//          this.right, this.bottom,
+//          this.left, this.bottom);
+  
+  // calculate the height and width
+  this.width = this.right - this.left;
+  this.height = this.bottom - this.top;
+  
+  for (var i = 0; i < this.player.dependentDrawableItems.length; i++){
+      
+      if (this.constrainedSize < containerHeight){
+          this.player.dependentDrawableItems[i].changeSize(this.constrainedSize/18);
+      } else {
+          this.player.dependentDrawableItems[i].changeSize(this.width/12);
+      }
+      this.player.dependentDrawableItems[i].moveTo(this.left + this.width/8 + this.width * i * 1/8, this.top + this.height/2);
+      //
+  }
+  
+  this.statusBar.changeSize(this);
+}
+//=====================================================================================
+//CLASS - playerStatusBar
+function playerStatusBar(activeOrPassive){
+    polygon.call(this, 4, true);
+    this.fillStyle = "rgba(216,216,216,.75)";
+    this.heightRatio = 1/5;
+    this.widthRatio = 1;
+    this.nameDisplay = new text("Player Name", true)
+    this.dependentDrawableItems[0] = this.nameDisplay;
+    this.dividerThingy = new pline(2);
+    this.dependentDrawableItems[1] = this.dividerThingy;
+    this.dividerThingy.lineCap = "butt";
+    this.dividerThingy.strokeStyle = "#000000";
+    this.scoreDisplay = new text("0", true)
+    this.dependentDrawableItems[2] = this.scoreDisplay;
+    this.activeOrPassive = activeOrPassive;
+    this.line = new pline();
+}
+
 playerStatusBar.prototype = Object.create(polygon.prototype);
 playerStatusBar.prototype.constructor = playerStatusBar;
 
+playerStatusBar.prototype.changeSize = function(container){
+    var constrainedSize = container.constrainedSize/25;
+    this.activeOrPassive = container.activeOrPassive;
+    // inherit the drawItem changeSize action
+    drawableItem.prototype.changeSize.call(this, constrainedSize/20);
+    
+    // arrange position of the status bar relative to the container
+    if (this.activeOrPassive === "active"){
+        this.top = container.bottom - container.height * this.heightRatio;
+        this.right = container.width * this.widthRatio;
+        this.bottom = container.bottom;
+        this.left = 0;
+        this.center.y = this.bottom;
+        this.center.x = this.left;
+    }else if(this.activeOrPassive === "passive"){
+        this.top = container.top;
+        this.right = container.right;
+        this.bottom = container.bottom * this.heightRatio;
+        this.left = container.right - container.width * this.widthRatio;
+        this.center.y = this.top;
+        this.center.x = this.right;
+    }
+    // set the vertices of this polygon to the calculated top/bott/left/right
+    this.setPoints(this.left, this.top,
+            this.right, this.top,
+            this.right, this.bottom,
+            this.left, this.bottom);
+    // calculate the height and width
+    this.width = this.right - this.left;
+    this.height = this.bottom - this.top;
+    
+    // arrange the player name and little divider line thingy and score
+    this.nameDisplay.text = container.player.name;
+        //this line is changing the text size based on height and width - only changed with height before this
+    this.nameDisplay.changeSize(constrainedSize);
+    this.dividerThingy.changeSize(constrainedSize/20);
+    this.scoreDisplay.text = container.player.score;
+    this.scoreDisplay.changeSize(constrainedSize);
+    // arrange the position of the things inside the status bars
+    if (this.activeOrPassive === "active"){
+        // the player name
+        this.nameDisplay.textAlign = "left";
+        this.nameDisplay.moveTo(this.left, this.height/2 + this.top);
+        // little divider line thingy
+        this.dividerThingy.setPoints(this.left + this.width * 5/6, this.top,
+                this.left + this.width * 5/6, this.bottom);
+        // score
+        this.scoreDisplay.moveTo(this.left + container.width/16 + this.width * 5/6, this.height/2 + this.top);
+    }else if (this.activeOrPassive === "passive"){
+        // the player name
+        this.nameDisplay.textAlign = "right";
+        this.nameDisplay.moveTo(this.right - container.width/16, this.height/2);
+        // little divider line thingy
+        this.dividerThingy.setPoints(this.left + this.width * 1/6, this.top,
+                this.left + this.width * 1/6, this.bottom);
+        // score
+        this.scoreDisplay.textAlign = "right";
+        this.scoreDisplay.moveTo(this.right - container.width/16 - this.width * 5/6, this.height/2);
+    }
+    
+    //
+}
+
 //=====================================================================================
 //CLASS - boneyard
-function boneyard(sizeRatio, canvasWidth, canvasHeight){
+function boneyard(){
     polygon.call(this, 4, true);
-    this.fillStyle = "#D8D8D8";
-    this.sizeRatio = sizeRatio;
-    this.center.x = canvasWidth;
-    this.center.y = canvasHeight;
-    this.size = ((canvasWidth < canvasHeight) ? canvasWidth : canvasHeight)
+    this.sizeRatio = 1/4;
+    this.fillStyle = "rgba(216,216,216,0.75)";
+    this.boneArray = new Array();
+    var tempBoneArray = new Array();
     var boneCounter = 0;
     var i = 0;
+    this.numberOfColumns = 7;
 
-    //populate the boneyard with an entire domino set
+    // populate the boneyard with an entire domino set
     while (i < 7){
         for (var j = 0; j <= i; j++){
-            this.dependentDrawableItems[boneCounter] = new domino(i, j, this.size/25);
-            this.dependentDrawableItems[boneCounter].moveTo(this.center.x - (boneCounter%10 + 1) * 35,
-                    this.center.y - Math.floor(boneCounter/10 +1) * canvasWidth/32);
+            this.dependentDrawableItems[boneCounter] = new domino(i, j, 1);
+            this.dependentDrawableItems[boneCounter].flipOver();
             boneCounter++;
         }
         i++;
     }
+    // wash the bones
+    boneCounter = 0;
+    tempBoneArray = this.dependentDrawableItems.slice(0);
+    this.dependentDrawableItems.length = 0;
+    while (tempBoneArray.length > 0){
+        boneCounter = Math.floor(Math.random()*tempBoneArray.length);
+        this.dependentDrawableItems.push(tempBoneArray[boneCounter]);
+        tempBoneArray.splice(boneCounter,1);
+    }
 }
 boneyard.prototype = Object.create(polygon.prototype);
 boneyard.prototype.constructor = boneyard;
-boneyard.prototype.changeSize = function(canvasWidth, canvasHeight){
-    this.size = ((canvasWidth < canvasHeight)? canvasWidth : canvasHeight) * this.sizeRatio;
-    this.center.x = canvasWidth;
-    this.center.y = canvasHeight;
-    this.numberOfColumns = 10;
-    //draw the boneyard
-    this.setPoints(canvasWidth - canvasWidth * this.sizeRatio, canvasHeight - canvasHeight * this.sizeRatio,
-            canvasWidth, canvasHeight - canvasHeight * this.sizeRatio,
-            canvasWidth, canvasHeight,
-            canvasWidth - canvasWidth * this.sizeRatio, canvasHeight);
+boneyard.prototype.changeSize = function(container){
+    var containerWidth = container.canvas.width;
+    var containerHeight = container.canvas.height;
+    var constrainedSize = ((containerWidth < containerHeight)? containerWidth : containerHeight);
+    this.width = this.right - this.left;
+    this.height = this.bottom - this.top;
+    this.center.x = containerWidth;
+    this.center.y = containerHeight;
+    
+    // arrange the boneyard
+    this.setPoints(containerWidth - containerWidth * this.sizeRatio, containerHeight - containerHeight * this.sizeRatio,
+            containerWidth, containerHeight - containerHeight * this.sizeRatio,
+            containerWidth, containerHeight,
+            containerWidth - containerWidth * this.sizeRatio, containerHeight);
+    // arrange the bones in the boneyard
     for (var i = 0; i < this.dependentDrawableItems.length; i++){
-        this.dependentDrawableItems[i].changeSize(this.size/10);
-        this.dependentDrawableItems[i].moveTo(this.center.x - (i % this.numberOfColumns + 1) * canvasWidth/32,
-                this.center.y - Math.floor(i / this.numberOfColumns + 1) * canvasHeight/12);
+        this.dependentDrawableItems[i].changeSize(constrainedSize/36);
+        this.dependentDrawableItems[i].moveTo(this.center.x - (i % this.numberOfColumns + 1) * containerWidth/32,
+                this.center.y - Math.floor(i / this.numberOfColumns + 1) * containerHeight/12);
+    }
+}
+//=====================================================================================
+//CLASS - player
+function player(name){
+    drawableItem.call(this);
+    this.name = name;
+    this.score = 0;
+    //this.hand = new Array();
+    //this.hand.length = 7;
+    //this.dependentDrawableItems = this.hand.slice(0);
+}
+player.prototype = Object.create(drawableItem.prototype);
+player.prototype.constructor = player;
+
+//=====================================================================================
+//CLASS - buttonPanel
+function buttonPanel(){
+    polygon.call(this, 4, false);
+    this.strokeStyle = "#FF00FF";
+    this.heightRatio = 1/3;
+    this.widthRatio = 1/4;
+    this.btnEndTurn = new button("End Turn")
+    this.dependentDrawableItems[0] = this.btnEndTurn;
+    this.btnPass = new button("Pass")
+    this.dependentDrawableItems[1] = this.btnPass;
+    this.btnMenu = new button("Menu")
+    this.dependentDrawableItems[2] = this.btnMenu;
+    this.constrainedSize;
+}
+buttonPanel.prototype = Object.create(polygon.prototype);
+buttonPanel.prototype.constructor = buttonPanel;
+buttonPanel.prototype.changeSize = function(container){
+    var containerWidth = container.canvas.width;
+    var containerHeight = container.canvas.height;
+    this.constrainedSize = ((containerWidth < containerHeight)? containerWidth : containerHeight);
+    
+    // arrange the button panel
+    this.center.x = containerWidth - containerWidth * 1/4;
+    this.center.y = containerHeight;
+    this.left = this.center.x - containerWidth * this.widthRatio;
+    this.right = this.center.x;
+    this.top = this.center.y - containerHeight * this.heightRatio;
+    this.bottom = this.center.y;
+    this.width = this.right - this.left;
+    this.height = this.bottom - this.top;
+    
+    // arrange the panel (temporary outline) - uncomment to see the panel outline
+    //this.setPoints(this.left, this.top,
+    //        this.right, this.top,
+    //        this.right, this.bottom,
+    //        this.left, this.bottom);
+    
+    // arrange the dimensions of the menu button in relation to it's container
+    this.btnMenu.left = this.left + this.width*17/32;
+    this.btnMenu.right = this.right - this.width/16;
+    this.btnMenu.top = this.top + this.height/4;
+    this.btnMenu.bottom = this.top + this.height/2;
+    
+    // arrange the dimensions of the pass button in relation to it's container
+    this.btnPass.left = this.left + this.width/16;
+    this.btnPass.right = this.right - this.width*17/32;
+    this.btnPass.top = this.top + this.height/4;
+    this.btnPass.bottom = this.top + this.height/2;
+    
+    // arrange the dimensions of the end turn button in relation to it's container
+    this.btnEndTurn.left = this.left + this.width/16;
+    this.btnEndTurn.right = this.right - this.width/16;
+    this.btnEndTurn.top = this.top + this.height * 5/8;
+    this.btnEndTurn.bottom = this.bottom - this.height/8;
+    
+    //possibly abbreviate the buttons if the screen gets too thin (it's fine for now)
+    if (this.constrainedSize < container.height){
+        this.btnEndTurn.displayText.text = "End Turn"
+    } else {
+        this.btnEndTurn.displayText.text = "End Turn"
     }
     
-
+    //change the dependent's sizes
+    this.btnMenu.changeSize(this);
+    this.btnPass.changeSize(this);
+    this.btnEndTurn.changeSize(this);    
+    
+}
+//=====================================================================================
+//CLASS - button
+function button(displayText){
+    polygon.call(this, 4, true);
+    this.fillStyle = "rgba(216,216,216,0.75)";
+    this.displayText = new text(displayText, true);
+    this.dependentDrawableItems[0] = this.displayText;
+    this.displayText.textAlign = "center";
+}
+button.prototype = Object.create(polygon.prototype);
+button.prototype.constructor = button;
+button.prototype.changeSize = function(container){
+    // determine constrained screen size by reversing container down scale
+    var constrainedSize = container.constrainedSize/25;
+    // set the buttons size based on it's
+    this.width = this.right - this.left;
+    this.height = this.bottom - this.top;
+    this.center.x = this.left + this.width/2;
+    this.center.y = this.top + this.height/2;
+    // actually set the points of this button based on it's dimensions
+    this.setPoints(this.left, this.top,
+            this.right, this.top,
+            this.right, this.bottom,
+            this.left, this.bottom);
+    //resize and move the text in relation to this button and it's container
+    this.displayText.changeSize(constrainedSize);
+    this.displayText.moveTo(this.center.x, this.center.y);
 }
